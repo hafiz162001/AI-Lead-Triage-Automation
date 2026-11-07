@@ -1,0 +1,105 @@
+{
+  "name": "AI Lead Triage - Error Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e1a2b3c4-0001-4000-8000-000000000001",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const execution = $json.execution || {};\nconst workflow = $json.workflow || {};\nconst error = execution.error || {};\n\nconst workflowId = workflow.id || 'unknown';\nconst workflowName = workflow.name || 'AI Lead Triage';\nconst executionId = execution.id || 'manual';\nconst nodeName = execution.lastNodeExecuted || error.node?.name || 'Unknown Node';\nconst errorMessage = error.message || 'Unknown error occurred';\n\nconst errorDetails = {\n  stack: error.stack || null,\n  name: error.name || null,\n  description: error.description || null,\n  timestamp: new Date().toISOString()\n};\n\nlet rawPayload = null;\ntry {\n  rawPayload = execution.data?.resultData?.runData?.[nodeName]?.[0]?.data?.main?.[0]?.[0]?.json || null;\n} catch (e) {\n  rawPayload = null;\n}\n\nreturn {\n  workflow_id: workflowId,\n  workflow_name: workflowName,\n  execution_id: executionId,\n  node_name: nodeName,\n  error_message: errorMessage,\n  error_details: JSON.stringify(errorDetails),\n  payload: JSON.stringify(rawPayload),\n  created_at: new Date().toISOString()\n};"
+      },
+      "id": "e1a2b3c4-0001-4000-8000-000000000002",
+      "name": "Format Error Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO errors (workflow_id, workflow_name, execution_id, node_name, error_message, error_details, payload, created_at)\nVALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [$json.workflow_id, $json.workflow_name, $json.execution_id, $json.node_name, $json.error_message, $json.error_details, $json.payload, $json.created_at] }}"
+        }
+      },
+      "id": "e1a2b3c4-0001-4000-8000-000000000003",
+      "name": "Log to Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [640, 300],
+      "credentials": {
+        "postgres": {
+          "id": "JTibQrlGjVidzkqn",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"parse_mode\": \"Markdown\",\n  \"text\": \"🚨 *WORKFLOW EXECUTION ERROR* 🚨\\n\\n*Workflow:* {{ $('Format Error Data').first().json.workflow_name }}\\n*Failed Node:* `{{ $('Format Error Data').first().json.node_name }}`\\n*Execution ID:* `{{ $('Format Error Data').first().json.execution_id }}`\\n*Error Message:* {{ $('Format Error Data').first().json.error_message }}\\n\\n_Error logged to Postgres 'errors' table._\"\n}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetween": 1000
+            }
+          }
+        }
+      },
+      "id": "e1a2b3c4-0001-4000-8000-000000000004",
+      "name": "Alert Telegram Admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 300],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Data": {
+      "main": [
+        [
+          {
+            "node": "Log to Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Postgres": {
+      "main": [
+        [
+          {
+            "node": "Alert Telegram Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

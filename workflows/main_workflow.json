@@ -1,0 +1,515 @@
+{
+  "name": "AI Lead Triage - Main Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-triage",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000001",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 400],
+      "webhookId": "lead-triage"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $json.headers || {};\nconst expectedSecret = $env.WEBHOOK_SECRET_KEY || '';\nconst incomingSecret = headers['x-webhook-secret'] || headers['X-Webhook-Secret'] || '';\n\nconst isAuthorized = Boolean(expectedSecret && incomingSecret === expectedSecret);\n\nreturn {\n  is_authorized: isAuthorized,\n  headers: headers,\n  body: $json.body || {}\n};"
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000002",
+      "name": "Verify Secret Header",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_authorized }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000003",
+      "name": "Is Authorized?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [540, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Unauthorized\",\n  \"message\": \"Missing or invalid X-Webhook-Secret header\"\n}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000004",
+      "name": "Respond 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [760, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst body = $json.body || {};\nconst errors = [];\n\nconst name = typeof body.name === 'string' ? body.name.trim() : '';\nconst email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';\nconst message = typeof body.message === 'string' ? body.message.trim() : '';\n\nif (!name || name.length < 2) {\n  errors.push(\"Field 'name' is required and must have at least 2 characters.\");\n}\n\nconst emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nif (!email || !emailRegex.test(email)) {\n  errors.push(\"Field 'email' is required and must be a valid email address.\");\n}\n\nif (!message || message.length < 5) {\n  errors.push(\"Field 'message' is required and must have at least 5 characters.\");\n}\n\nif (errors.length > 0) {\n  return {\n    is_valid: false,\n    errors: errors,\n    body: body\n  };\n}\n\n// Compute idempotency SHA-256 hash based on normalized email and message\nconst idempotencyHash = crypto.createHash('sha256').update(`${email}|${message}`).digest('hex');\n\n// Fast rule-based spam keywords filter\nconst spamKeywords = [\n  /\\bviagra\\b/i,\n  /\\bcasino\\b/i,\n  /\\bcrypto\\s*doubler\\b/i,\n  /\\bguaranteed\\s*seo\\b/i,\n  /\\bbacklinks?\\s*package\\b/i,\n  /\\bmake\\s*\\$?\\d+\\s*(per|a)\\s*day\\b/i,\n  /\\btelegram\\s*investment\\b/i,\n  /\\bwhatsapp\\s*loan\\b/i,\n  /\\bfree\\s*money\\b/i,\n  /\\bclaim\\s*your\\s*prize\\b/i\n];\n\nconst isSpam = spamKeywords.some(pattern => pattern.test(message) || pattern.test(name));\n\nreturn {\n  is_valid: true,\n  is_spam: isSpam,\n  name: name,\n  email: email,\n  message: message,\n  idempotency_hash: idempotencyHash,\n  raw_payload: JSON.stringify(body)\n};"
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000005",
+      "name": "Validate Input & Rule Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000006",
+      "name": "Is Valid Input?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [980, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": \"Bad Request\",\n  \"details\": {{ JSON.stringify($json.errors) }}\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000007",
+      "name": "Respond 400 Bad Request",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_spam }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000008",
+      "name": "Is Spam Shortcut?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1200, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  name: $json.name,\n  email: $json.email,\n  message: $json.message,\n  idempotency_hash: $json.idempotency_hash,\n  raw_payload: $json.raw_payload,\n  category: \"spam\",\n  urgency: \"low\",\n  summary: \"Filtered automatically by rule-based spam detector.\",\n  suggested_reply: \"\",\n  needs_human_review: false,\n  source: \"rule_engine\"\n};"
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000009",
+      "name": "Handle Spam Shortcut",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1460, 480]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"You are an enterprise AI Lead Classifier. Classify the following contact inquiry strictly into JSON format.\\n\\nInput Lead:\\nName: {{ $json.name }}\\nEmail: {{ $json.email }}\\nMessage: {{ $json.message }}\\n\\nRules:\\n- category must be one of: \\\"sales\\\", \\\"support\\\", \\\"spam\\\", \\\"other\\\"\\n- urgency must be one of: \\\"low\\\", \\\"medium\\\", \\\"high\\\"\\n- summary must be 1-2 concise sentences summarizing the inquiry\\n- suggested_reply must be a professional, courteous initial draft response\\n\\nRespond with strictly valid JSON matching this schema:\\n{\\n  \\\"category\\\": \\\"sales\\\" | \\\"support\\\" | \\\"spam\\\" | \\\"other\\\",\\n  \\\"urgency\\\": \\\"low\\\" | \\\"medium\\\" | \\\"high\\\",\\n  \\\"summary\\\": \\\"string\\\",\\n  \\\"suggested_reply\\\": \\\"string\\\"\\n}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\",\n    \"temperature\": 0.2\n  }\n}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000010",
+      "name": "Call Gemini LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1460, 680],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevLead = $('Validate Input & Rule Filter').first().json;\nconst llmResponse = $json;\n\nlet parsed = null;\nlet fallbackReason = null;\n\ntry {\n  if (llmResponse.error) {\n    fallbackReason = 'API error: ' + (llmResponse.error.message || JSON.stringify(llmResponse.error));\n  } else {\n    const parts = llmResponse.candidates?.[0]?.content?.parts || [];\n    let text = null;\n    for (let i = parts.length - 1; i >= 0; i--) {\n      if (parts[i].text && parts[i].text.includes('{') && !parts[i].thought) {\n        text = parts[i].text;\n        break;\n      }\n    }\n    if (!text && parts.length > 0) {\n      text = parts[parts.length - 1].text;\n    }\n\n    if (text) {\n      let cleanText = text.trim();\n      const jsonMatch = cleanText.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);\n      if (jsonMatch) {\n        cleanText = jsonMatch[1];\n      } else {\n        const firstBrace = cleanText.indexOf('{');\n        const lastBrace = cleanText.lastIndexOf('}');\n        if (firstBrace !== -1 && lastBrace !== -1) {\n          cleanText = cleanText.substring(firstBrace, lastBrace + 1);\n        }\n      }\n      parsed = JSON.parse(cleanText);\n    } else {\n      fallbackReason = 'Empty response or missing candidate parts';\n    }\n  }\n} catch (e) {\n  fallbackReason = 'JSON parse error: ' + e.message;\n}\n\n// Validate strict fields\nconst validCategories = ['sales', 'support', 'spam', 'other'];\nconst validUrgencies = ['low', 'medium', 'high'];\n\nlet category = 'other';\nlet urgency = 'medium';\nlet summary = '';\nlet suggestedReply = '';\nlet needsHumanReview = false;\n\nconst parsedCat = parsed && typeof parsed.category === 'string' ? parsed.category.toLowerCase().trim() : '';\nconst parsedUrg = parsed && typeof parsed.urgency === 'string' ? parsed.urgency.toLowerCase().trim() : '';\n\nif (parsed && validCategories.includes(parsedCat) && validUrgencies.includes(parsedUrg)) {\n  category = parsedCat;\n  urgency = parsedUrg;\n  summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : 'Inquiry received.';\n  suggestedReply = typeof parsed.suggested_reply === 'string' ? parsed.suggested_reply.trim() : 'Thank you for reaching out.';\n  needsHumanReview = typeof parsed.needs_human_review === 'boolean' ? parsed.needs_human_review : (category === 'support' && urgency === 'high');\n} else {\n  // Fallback as specified: category 'other' + flag needs_human_review\n  category = 'other';\n  urgency = 'medium';\n  summary = fallbackReason ? `Automated classification failed (${fallbackReason}).` : 'Malformed classification schema.';\n  suggestedReply = 'Thank you for contacting us. We have received your request and our team will review it shortly.';\n  needsHumanReview = true;\n}\n\nreturn {\n  name: prevLead.name,\n  email: prevLead.email,\n  message: prevLead.message,\n  idempotency_hash: prevLead.idempotency_hash,\n  raw_payload: prevLead.raw_payload,\n  category: category,\n  urgency: urgency,\n  summary: summary,\n  suggested_reply: suggestedReply,\n  needs_human_review: needsHumanReview,\n  source: fallbackReason ? 'llm_fallback' : 'gemini_llm'\n};"
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000011",
+      "name": "Parse & Validate LLM JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 680]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO leads (name, email, message, category, urgency, summary, suggested_reply, needs_human_review, idempotency_hash, raw_payload)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)\nON CONFLICT (idempotency_hash) DO NOTHING\nRETURNING id, created_at;",
+        "options": {
+          "queryReplacement": "={{ [$json.name, $json.email, $json.message, $json.category, $json.urgency, $json.summary, $json.suggested_reply, $json.needs_human_review, $json.idempotency_hash, $json.raw_payload] }}"
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000012",
+      "name": "Save Lead to Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1940, 580],
+      "credentials": {
+        "postgres": {
+          "id": "JTibQrlGjVidzkqn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const insertResult = $json;\nconst isNewLead = Boolean(insertResult && insertResult.id);\n\nlet prevData = {};\ntry {\n  if ($('Parse & Validate LLM JSON').isExecuted) {\n    prevData = $('Parse & Validate LLM JSON').first().json;\n  } else if ($('Handle Spam Shortcut').isExecuted) {\n    prevData = $('Handle Spam Shortcut').first().json;\n  } else {\n    prevData = $('Validate Input & Rule Filter').first().json;\n  }\n} catch (e) {\n  try {\n    prevData = $('Handle Spam Shortcut').first().json;\n  } catch (err) {\n    prevData = $('Validate Input & Rule Filter').first().json;\n  }\n}\n\nreturn {\n  ...prevData,\n  lead_id: insertResult.id || null,\n  is_duplicate: !isNewLead\n};"
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000013",
+      "name": "Evaluate Idempotency",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2160, 580]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_duplicate }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000014",
+      "name": "Is Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2380, 580]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"duplicate_ignored\",\n  \"message\": \"Duplicate submission detected. Lead already logged.\",\n  \"idempotency_hash\": \"{{ $json.idempotency_hash }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000015",
+      "name": "Respond Duplicate 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2620, 440]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.urgency }}",
+              "value2": "high"
+            }
+          ]
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000016",
+      "name": "Is High Urgency?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2620, 680]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"parse_mode\": \"Markdown\",\n  \"text\": \"🔥 *[HIGH URGENCY LEAD DETECTED]* 🔥\\n\\n*Lead ID:* `{{ $json.lead_id }}`\\n*Name:* {{ $json.name }}\\n*Email:* {{ $json.email }}\\n*Category:* #{{ $json.category }}\\n*Needs Human Review:* {{ $json.needs_human_review ? '⚠️ YES' : 'NO' }}\\n\\n*Summary:*\\n{{ $json.summary }}\\n\\n*Original Message:*\\n_{{ $json.message }}_\\n\\n*Suggested Reply:*\\n```\\n{{ $json.suggested_reply }}\\n```\"\n}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetween": 1000
+            }
+          }
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000017",
+      "name": "Telegram High Priority Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2860, 580],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"parse_mode\": \"Markdown\",\n  \"text\": \"📩 *New Lead Received*\\n\\n*Lead ID:* `{{ $json.lead_id }}`\\n*From:* {{ $json.name }} ({{ $json.email }})\\n*Category:* #{{ $json.category }} | *Urgency:* {{ $json.urgency }}\\n*Needs Review:* {{ $json.needs_human_review ? '⚠️ YES' : 'NO' }}\\n\\n*Summary:*\\n{{ $json.summary }}\"\n}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetween": 1000
+            }
+          }
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000018",
+      "name": "Telegram Standard Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2860, 780],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  status: 'success',\n  lead_id: $('Evaluate Idempotency').first().json.lead_id,\n  category: $('Evaluate Idempotency').first().json.category,\n  urgency: $('Evaluate Idempotency').first().json.urgency,\n  needs_human_review: $('Evaluate Idempotency').first().json.needs_human_review,\n  summary: $('Evaluate Idempotency').first().json.summary\n}) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "m1a2b3c4-0002-4000-8000-000000000019",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3100, 680]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify Secret Header",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Secret Header": {
+      "main": [
+        [
+          {
+            "node": "Is Authorized?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Authorized?": {
+      "main": [
+        [
+          {
+            "node": "Validate Input & Rule Filter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input & Rule Filter": {
+      "main": [
+        [
+          {
+            "node": "Is Valid Input?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid Input?": {
+      "main": [
+        [
+          {
+            "node": "Is Spam Shortcut?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400 Bad Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Spam Shortcut?": {
+      "main": [
+        [
+          {
+            "node": "Handle Spam Shortcut",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Gemini LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Spam Shortcut": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Gemini LLM": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate LLM JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate LLM JSON": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead to Postgres": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Idempotency": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Respond Duplicate 200",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is High Urgency?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is High Urgency?": {
+      "main": [
+        [
+          {
+            "node": "Telegram High Priority Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Standard Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram High Priority Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Standard Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "hLiKlvIK7Jp0OyMB"
+  }
+}

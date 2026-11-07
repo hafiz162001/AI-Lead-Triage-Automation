@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Lead & Inquiry Triage - Interactive Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b0f19 75%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(59, 130, 246, 0.1);
+    }
+
+    .header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .quick-examples {
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+
+    .quick-examples span {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pill:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #d1d5db;
+      margin-bottom: 6px;
+    }
+
+    input, textarea {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.92rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 85px;
+    }
+
+    button.btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+      margin-top: 20px;
+    }
+
+    button.btn-submit:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+    }
+
+    button.btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .result-box {
+      margin-top: 24px;
+      border-radius: 12px;
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tag {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .tag-sales { background: #065f46; color: #6ee7b7; }
+    .tag-support { background: #7c2d12; color: #fdba74; }
+    .tag-spam { background: #374151; color: #9ca3af; }
+    .tag-high { background: #831843; color: #f472b6; }
+    .tag-low { background: #1e293b; color: #94a3b8; }
+
+    .result-content {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: #e5e7eb;
+    }
+
+    .result-content strong {
+      color: #93c5fd;
+    }
+
+    .suggested-reply-box {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 3px solid var(--primary);
+      border-radius: 4px;
+      font-style: italic;
+      color: #cbd5e1;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="badge">
+        <span class="badge-dot"></span> Webhook & AI Engine Live
+      </div>
+      <h1>AI Lead & Inquiry Triage</h1>
+      <p class="subtitle">Kirim pesan uji coba untuk melihat klasifikasi AI & notifikasi Telegram secara instan</p>
+    </div>
+
+    <div class="quick-examples">
+      <span>Klik Contoh Cepat:</span>
+      <div class="pill-group">
+        <button class="pill" type="button" onclick="fillExample('sales')">💼 Sales (50 Lisensi)</button>
+        <button class="pill" type="button" onclick="fillExample('support')">🚨 Darurat (Server Down)</button>
+        <button class="pill" type="button" onclick="fillExample('spam')">🚫 Filter Spam</button>
+      </div>
+    </div>
+
+    <form id="triageForm" onsubmit="submitForm(event)">
+      <div class="form-group">
+        <label for="name">Nama Pengirim</label>
+        <input type="text" id="name" required placeholder="Contoh: Budi Santoso" value="Dr. Hendra Wijaya">
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required placeholder="Contoh: hendra@puskesmas.go.id" value="hendra.wijaya@instansi.go.id">
+      </div>
+
+      <div class="form-group">
+        <label for="message">Isi Pesan / Keluhan</label>
+        <textarea id="message" required placeholder="Tuliskan pesan atau inquiry Anda...">Kami tertarik untuk mengintegrasikan sistem AI ini dengan alur pendaftaran pasien dan triage keluhan BPJS di 5 unit faskes. Bisakah dijadwalkan demo teknis minggu ini?</textarea>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submitBtn">
+        <span>Kirim Pesan ke AI Webhook</span>
+      </button>
+    </form>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-header">
+        <div style="display: flex; gap: 6px; align-items: center;" id="tagsContainer">
+          <!-- Tags inserted dynamically -->
+        </div>
+        <small style="color: var(--text-muted);" id="responseTime">0 ms</small>
+      </div>
+      <div class="result-content" id="resultDetails"></div>
+    </div>
+  </div>
+
+  <script>
+    const WEBHOOK_URL = 'http://localhost:5678/webhook/lead-triage';
+    const SECRET_KEY = 'kunci_rahasia_triage_123';
+
+    const examples = {
+      sales: {
+        name: 'Pak Ahmad (Direktur IT)',
+        email: 'ahmad.it@perusahaan-mitra.com',
+        message: 'Halo tim, kami sedang mencari solusi otomasi data antrean dan triage untuk 250 pengguna aktif. Mohon kirimkan proposal harga dan jadwal demo produk.'
+      },
+      support: {
+        name: 'Staf IGD Puskesmas',
+        email: 'admin.igd@puskesmas-kota.id',
+        message: 'DARURAT: Sistem bridging BPJS dan database rekam medis tidak bisa diakses sama sekali sejak 15 menit lalu! Pasien antre menumpuk di loket!'
+      },
+      spam: {
+        name: 'Promo Marketing',
+        email: 'info@gacor-promo-88.xyz',
+        message: 'Dapatkan promo pinjaman kilat dan bonus deposit sekarang juga di link berikut!'
+      }
+    };
+
+    function fillExample(type) {
+      const ex = examples[type];
+      if (ex) {
+        document.getElementById('name').value = ex.name;
+        document.getElementById('email').value = ex.email;
+        document.getElementById('message').value = ex.message;
+      }
+    }
+
+    async function submitForm(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const resultBox = document.getElementById('resultBox');
+      const tagsContainer = document.getElementById('tagsContainer');
+      const resultDetails = document.getElementById('resultDetails');
+      const responseTime = document.getElementById('responseTime');
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Memproses dengan AI...</span>';
+      resultBox.style.display = 'none';
+
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        message: document.getElementById('message').value.trim()
+      };
+
+      const startTime = performance.now();
+
+      try {
+        const res = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Secret': SECRET_KEY
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const elapsed = Math.round(performance.now() - startTime);
+        const data = await res.json();
+
+        resultBox.style.display = 'block';
+        responseTime.textContent = `${elapsed} ms`;
+
+        if (res.ok) {
+          resultBox.style.background = 'rgba(16, 185, 129, 0.08)';
+          resultBox.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+
+          const cat = (data.category || 'other').toLowerCase();
+          const urg = (data.urgency || 'low').toLowerCase();
+
+          tagsContainer.innerHTML = `
+            <span class="tag ${cat === 'sales' ? 'tag-sales' : (cat === 'support' ? 'tag-support' : 'tag-spam')}">#${cat}</span>
+            <span class="tag ${urg === 'high' ? 'tag-high' : 'tag-low'}">Urgensi: ${urg}</span>
+            ${data.needs_human_review ? '<span class="tag tag-high">⚠️ Perlu Review</span>' : ''}
+          `;
+
+          resultDetails.innerHTML = `
+            <p><strong>Ringkasan AI:</strong> ${data.summary || 'Pesan berhasil diterima.'}</p>
+            <p style="margin-top: 6px; font-size: 0.8rem; color: #94a3b8;">
+              ✅ Tersimpan di PostgreSQL (ID: <code>${data.lead_id || data.idempotency_hash || '-'}</code>)<br>
+              📱 Notifikasi otomatis langsung terkirim ke Telegram!
+            </p>
+          `;
+        } else {
+          resultBox.style.background = 'rgba(239, 68, 68, 0.08)';
+          resultBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          tagsContainer.innerHTML = `<span class="tag tag-high">HTTP ${res.status}</span>`;
+          resultDetails.innerHTML = `<p style="color: #fca5a5;"><strong>Error:</strong> ${data.message || data.error || JSON.stringify(data)}</p>`;
+        }
+      } catch (err) {
+        resultBox.style.display = 'block';
+        resultBox.style.background = 'rgba(239, 68, 68, 0.08)';
+        resultBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        tagsContainer.innerHTML = `<span class="tag tag-high">Connection Error</span>`;
+        resultDetails.innerHTML = `<p style="color: #fca5a5;">Gagal terhubung ke webhook. Pastikan n8n berjalan di port 5678.<br><small>${err.message}</small></p>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Kirim Pesan ke AI Webhook</span>';
+      }
+    }
+  </script>
+</body>
+</html>

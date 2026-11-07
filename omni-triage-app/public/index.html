@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniTriage AI — Autonomous Operations & Enterprise Triage Desk</title>
+  <meta name="description" content="Next-Gen AI Incident, Inquiry, and Enterprise Lead Triage System with Gemini LLM, PostgreSQL, and Telegram Dispatch.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient Glow Background Canvas -->
+  <div class="ambient-glow" aria-hidden="true">
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+    <div class="glow-orb glow-orb-3"></div>
+  </div>
+
+  <!-- Header / Navigation Bar -->
+  <header class="navbar" id="appNavbar">
+    <div class="navbar-left">
+      <div class="brand">
+        <div class="brand-icon-wrapper">
+          <div class="brand-pulse"></div>
+          <svg class="brand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">OmniTriage <span class="brand-ai">AI</span></div>
+          <div class="brand-tagline">Autonomous Enterprise Desk</div>
+        </div>
+      </div>
+      <div class="version-badge">v2.4 Live Engine</div>
+    </div>
+
+    <!-- Center Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" id="tabCommandDesk" data-target="viewCommandDesk" role="tab" aria-selected="true">
+        <span class="tab-icon">⚡</span> Command Desk
+      </button>
+      <button class="nav-tab" id="tabSimulator" data-target="viewSimulator" role="tab" aria-selected="false">
+        <span class="tab-icon">🧪</span> Testing Lab
+      </button>
+      <button class="nav-tab" id="tabAnalytics" data-target="viewAnalytics" role="tab" aria-selected="false">
+        <span class="tab-icon">📊</span> Intelligence Stats
+      </button>
+      <button class="nav-tab" id="tabChaos" data-target="viewChaos" role="tab" aria-selected="false">
+        <span class="tab-icon">🌊</span> Burst Generator
+      </button>
+    </nav>
+
+    <!-- Right Controls: Health & Audio -->
+    <div class="navbar-right">
+      <div class="health-cluster" id="healthCluster" title="System Infrastructure Status">
+        <div class="health-pill" id="healthDb" title="PostgreSQL Database">
+          <span class="dot dot-green"></span> DB :5433
+        </div>
+        <div class="health-pill" id="healthWebhook" title="n8n Pipeline Webhook">
+          <span class="dot dot-green"></span> n8n Engine
+        </div>
+        <div class="health-pill" id="healthAi" title="Gemini 3.5 Flash Model">
+          <span class="dot dot-green"></span> Gemini Flash
+        </div>
+        <div class="health-pill" id="healthTelegram" title="Telegram Bot Dispatch">
+          <span class="dot dot-green"></span> Telegram Armed
+        </div>
+      </div>
+
+      <button class="icon-btn" id="audioToggleBtn" title="Toggle Futuristic Audio FX" aria-label="Audio Feedback">
+        <svg id="audioIconOn" class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <svg id="audioIconOff" class="icon-svg hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+      </button>
+
+      <button class="cta-primary-btn" id="openSubmitModalBtn">
+        <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Inquiry
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="main-content">
+    
+    <!-- ======================================================== -->
+    <!-- VIEW 1: COMMAND DESK (Live Triage Feed) -->
+    <!-- ======================================================== -->
+    <section class="view-panel active" id="viewCommandDesk">
+      <!-- Executive KPI Strip -->
+      <div class="kpi-grid">
+        <div class="kpi-card card-glow-indigo">
+          <div class="kpi-header">
+            <span class="kpi-label">Total Inquiries Processed</span>
+            <div class="kpi-icon-badge">📦</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiTotalLeads">--</span>
+            <span class="kpi-trend positive">+100% Automated</span>
+          </div>
+          <div class="kpi-footer">PostgreSQL Idempotent Storage</div>
+        </div>
+
+        <div class="kpi-card card-glow-rose">
+          <div class="kpi-header">
+            <span class="kpi-label">Critical P1 / High Urgency</span>
+            <div class="kpi-icon-badge pulse-rose">🔥</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value text-rose" id="kpiHighUrgency">--</span>
+            <span class="kpi-badge-pill pill-rose">Telegram Alerted</span>
+          </div>
+          <div class="kpi-footer">Instant Ops Escalation</div>
+        </div>
+
+        <div class="kpi-card card-glow-violet">
+          <div class="kpi-header">
+            <span class="kpi-label">Pipeline Value Detected</span>
+            <div class="kpi-icon-badge">💼</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value text-violet" id="kpiPipelineValue">$0</span>
+            <span class="kpi-trend positive">Enterprise B2B</span>
+          </div>
+          <div class="kpi-footer">AI Qualified Sales Leads</div>
+        </div>
+
+        <div class="kpi-card card-glow-emerald">
+          <div class="kpi-header">
+            <span class="kpi-label">Spam Deflected (Zero LLM Cost)</span>
+            <div class="kpi-icon-badge">🛡️</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value text-emerald" id="kpiSpamDeflected">--</span>
+            <span class="kpi-badge-pill pill-emerald"><span id="kpiCostSaved">$0.00</span> Saved</span>
+          </div>
+          <div class="kpi-footer">Rule-Based Instant Shield (&lt;10ms)</div>
+        </div>
+      </div>
+
+      <!-- Live Feed Control Bar -->
+      <div class="control-bar">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search inquiry by name, email, keyword, or hash..." autocomplete="off">
+          <button class="clear-search-btn hidden" id="clearSearchBtn" title="Clear Search">✕</button>
+        </div>
+
+        <div class="filter-group">
+          <!-- Category Filter -->
+          <div class="filter-pills" id="categoryFilterPills">
+            <button class="filter-pill active" data-category="all">All Categories</button>
+            <button class="filter-pill pill-cat-sales" data-category="sales">💼 Sales</button>
+            <button class="filter-pill pill-cat-support" data-category="support">🛠️ Support</button>
+            <button class="filter-pill pill-cat-spam" data-category="spam">🚫 Spam</button>
+            <button class="filter-pill pill-cat-other" data-category="other">📁 Other</button>
+          </div>
+
+          <!-- Urgency Filter -->
+          <div class="filter-pills" id="urgencyFilterPills">
+            <button class="filter-pill active" data-urgency="all">All Urgency</button>
+            <button class="filter-pill pill-urg-high" data-urgency="high">🔥 High</button>
+            <button class="filter-pill pill-urg-med" data-urgency="medium">⚡ Medium</button>
+            <button class="filter-pill pill-urg-low" data-urgency="low">🟢 Low</button>
+          </div>
+        </div>
+
+        <!-- Right Action: Refresh & Live Toggle -->
+        <div class="feed-actions">
+          <button class="live-toggle-btn active" id="liveToggleBtn" title="Live Auto-Polling Active">
+            <span class="live-dot"></span> LIVE POLLING
+          </button>
+          <button class="refresh-btn" id="manualRefreshBtn" title="Refresh Live Data">
+            <svg class="icon-svg-sm" id="refreshIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Triage Items Stream / Feed Container -->
+      <div class="triage-feed-container">
+        <div class="feed-status-bar">
+          <div class="feed-status-left">
+            <span class="status-count" id="feedCountLabel">Showing 0 inquiries</span>
+            <span class="status-indicator-dot"></span>
+            <span class="status-sync-time" id="lastSyncLabel">Synchronized just now</span>
+          </div>
+          <div class="feed-status-right">
+            <label class="checkbox-container">
+              <input type="checkbox" id="filterReviewOnly">
+              <span class="checkbox-label">⚠️ Needs Human Review Only</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Cards List -->
+        <div class="feed-cards-grid" id="feedCardsGrid">
+          <!-- Populated dynamically via JS -->
+          <div class="feed-loading-state" id="feedLoadingState">
+            <div class="spinner"></div>
+            <p>Connecting to PostgreSQL & streaming triage telemetry...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 2: TESTING LAB (Inquiry Simulator) -->
+    <!-- ======================================================== -->
+    <section class="view-panel" id="viewSimulator">
+      <div class="simulator-layout">
+        <!-- Left: Form & Scenario Presets -->
+        <div class="simulator-left">
+          <div class="panel-header">
+            <div class="panel-badge">REAL-TIME INGESTION</div>
+            <h2 class="panel-title">Inquiry Simulator & Testing Lab</h2>
+            <p class="panel-subtitle">Dispatch custom inquiries through the end-to-end pipeline: Input Validation &rarr; Spam Heuristic &rarr; Gemini LLM &rarr; Postgres Idempotency &rarr; Telegram Bot Alert.</p>
+          </div>
+
+          <!-- Scenario Quick Presets -->
+          <div class="presets-container">
+            <div class="presets-header">⚡ One-Click Realistic Test Scenarios:</div>
+            <div class="presets-grid">
+              <button class="preset-card" id="presetEnterprise" data-preset="enterprise">
+                <div class="preset-tag tag-sales">Enterprise Sales</div>
+                <div class="preset-title">🏢 CTO 50-Seat Licenses</div>
+                <div class="preset-desc">Requests executive demo, budget &gt;$50k</div>
+              </button>
+
+              <button class="preset-card" id="presetOutage" data-preset="outage">
+                <div class="preset-tag tag-high">Critical Support</div>
+                <div class="preset-title">🚨 Production DB Down</div>
+                <div class="preset-desc">Triggers High Urgency + Telegram Alert</div>
+              </button>
+
+              <button class="preset-card" id="presetSpam" data-preset="spam">
+                <div class="preset-tag tag-spam">Spam Deflection</div>
+                <div class="preset-title">🎰 Crypto Casino Bot</div>
+                <div class="preset-desc">Deflected in &lt;10ms, LLM skipped</div>
+              </button>
+
+              <button class="preset-card" id="presetPartnership" data-preset="partnership">
+                <div class="preset-tag tag-partnership">Partnership</div>
+                <div class="preset-title">🤝 Cloud Ecosystem Co-sell</div>
+                <div class="preset-desc">Categorized as strategic inquiry</div>
+              </button>
+
+              <button class="preset-card" id="presetGeneral" data-preset="general">
+                <div class="preset-tag tag-support">General Inquiry</div>
+                <div class="preset-title">❓ Billing CSV Export</div>
+                <div class="preset-desc">Standard urgency, auto suggested reply</div>
+              </button>
+
+              <button class="preset-card" id="presetDuplicate" data-preset="duplicate">
+                <div class="preset-tag tag-idempotent">Idempotency Test</div>
+                <div class="preset-title">🔄 Double-Submit Replay</div>
+                <div class="preset-desc">Verifies ON CONFLICT DO NOTHING</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Ingestion Form -->
+          <form class="simulator-form" id="triageSimulatorForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="inputSenderName">Sender Full Name <span class="req">*</span></label>
+                <input type="text" id="inputSenderName" placeholder="e.g. Elena Rostova" required minlength="2">
+              </div>
+              <div class="form-group">
+                <label for="inputSenderEmail">Corporate / Personal Email <span class="req">*</span></label>
+                <input type="email" id="inputSenderEmail" placeholder="e.g. elena@acme-global.com" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="inputMessage">Inquiry Message Body <span class="req">*</span></label>
+              <textarea id="inputMessage" rows="4" placeholder="Enter inquiry text, business request, critical issue or question..." required minlength="5"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="submit-triage-btn" id="submitTriageBtn">
+                <span class="btn-spinner hidden" id="submitBtnSpinner"></span>
+                <span class="btn-text" id="submitBtnText">⚡ Execute Autonomous Triage</span>
+              </button>
+              <button type="button" class="reset-btn" id="resetFormBtn">Reset Form</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right: Pipeline Visualizer & Live Output -->
+        <div class="simulator-right">
+          <!-- Pipeline Stages Visualizer -->
+          <div class="pipeline-card">
+            <div class="pipeline-header">
+              <span class="pipeline-title">Active Pipeline Execution Path</span>
+              <span class="pipeline-badge" id="pipelineStatusBadge">Awaiting Input</span>
+            </div>
+
+            <div class="pipeline-steps" id="pipelineSteps">
+              <div class="pipe-step" id="pipeStep1">
+                <div class="pipe-indicator">1</div>
+                <div class="pipe-info">
+                  <div class="pipe-name">Security Auth &amp; Hash</div>
+                  <div class="pipe-sub">Secret Key &amp; SHA-256 Idempotency Check</div>
+                </div>
+                <div class="pipe-status" id="pipeStatus1">Ready</div>
+              </div>
+
+              <div class="pipe-step" id="pipeStep2">
+                <div class="pipe-indicator">2</div>
+                <div class="pipe-info">
+                  <div class="pipe-name">Fast-Path Spam Heuristics</div>
+                  <div class="pipe-sub">Tokenless keyword filter (&lt;10ms)</div>
+                </div>
+                <div class="pipe-status" id="pipeStatus2">Ready</div>
+              </div>
+
+              <div class="pipe-step" id="pipeStep3">
+                <div class="pipe-indicator">3</div>
+                <div class="pipe-info">
+                  <div class="pipe-name">Gemini LLM Intelligence</div>
+                  <div class="pipe-sub">Category, Urgency &amp; Suggested Reply</div>
+                </div>
+                <div class="pipe-status" id="pipeStatus3">Ready</div>
+              </div>
+
+              <div class="pipe-step" id="pipeStep4">
+                <div class="pipe-indicator">4</div>
+                <div class="pipe-info">
+                  <div class="pipe-name">PostgreSQL 16 Ledger</div>
+                  <div class="pipe-sub">Idempotent write to leads table</div>
+                </div>
+                <div class="pipe-status" id="pipeStatus4">Ready</div>
+              </div>
+
+              <div class="pipe-step" id="pipeStep5">
+                <div class="pipe-indicator">5</div>
+                <div class="pipe-info">
+                  <div class="pipe-name">Telegram Bot Dispatch</div>
+                  <div class="pipe-sub">High urgency instant team alert</div>
+                </div>
+                <div class="pipe-status" id="pipeStatus5">Ready</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Result Card -->
+          <div class="result-card" id="simulatorResultCard">
+            <div class="result-card-empty" id="resultEmptyPlaceholder">
+              <div class="empty-icon">🔮</div>
+              <div class="empty-title">No Triage Run Yet</div>
+              <p class="empty-subtitle">Select a preset on the left or type a custom inquiry, then click "Execute Autonomous Triage" to watch the AI dissect and classify the inquiry in real-time.</p>
+            </div>
+
+            <div class="result-card-content hidden" id="resultCardContent">
+              <div class="result-header">
+                <div class="result-status-badge" id="resStatusBadge">SUCCESS</div>
+                <div class="result-latency" id="resLatencyBadge">⚡ 1,240ms</div>
+              </div>
+
+              <div class="result-meta-row">
+                <div class="meta-item">
+                  <div class="meta-label">Category:</div>
+                  <div class="meta-val" id="resCategoryPill"><span class="badge-cat-sales">sales</span></div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Urgency:</div>
+                  <div class="meta-val" id="resUrgencyPill"><span class="badge-urg-high">high</span></div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Human Review:</div>
+                  <div class="meta-val" id="resReviewBadge">No</div>
+                </div>
+              </div>
+
+              <div class="result-section">
+                <div class="section-label">AI EXECUTIVE SUMMARY:</div>
+                <div class="summary-box" id="resSummaryText">Summary goes here...</div>
+              </div>
+
+              <div class="result-section">
+                <div class="section-label-row">
+                  <span class="section-label">AI DRAFTED SUGGESTED REPLY:</span>
+                  <button class="copy-action-btn" id="copyResultReplyBtn">📋 Copy Reply</button>
+                </div>
+                <div class="reply-box" id="resReplyText">Suggested reply goes here...</div>
+              </div>
+
+              <div class="result-section">
+                <div class="section-label">IDEMPOTENCY SHA-256 HASH:</div>
+                <code class="hash-code" id="resHashText">a1b2c3d4...</code>
+              </div>
+
+              <div class="telegram-dispatch-status" id="resTelegramStatus">
+                <span class="tg-icon">✈️</span>
+                <span class="tg-text" id="resTelegramText">Telegram Bot Alert Broadcasted to Team</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 3: INTELLIGENCE & ANALYTICS -->
+    <!-- ======================================================== -->
+    <section class="view-panel" id="viewAnalytics">
+      <div class="panel-header">
+        <div class="panel-badge">ENTERPRISE TELEMETRY</div>
+        <h2 class="panel-title">Triage Intelligence & Operations Analytics</h2>
+        <p class="panel-subtitle">Performance breakdown across urgency classes, category distributions, cost deflection metrics, and Telegram dispatch logs.</p>
+      </div>
+
+      <div class="analytics-grid">
+        <!-- Distribution Chart Card -->
+        <div class="analytics-card">
+          <div class="card-title-row">
+            <h3 class="card-title">Category Distribution</h3>
+            <span class="card-tag">Realtime Breakdown</span>
+          </div>
+          <div class="bar-chart-container" id="categoryChartContainer">
+            <!-- Dynamic Category Bars -->
+            <div class="chart-bar-row">
+              <div class="bar-label">Sales Opportunities</div>
+              <div class="bar-track">
+                <div class="bar-fill fill-sales" id="barFillSales" style="width: 25%;"></div>
+              </div>
+              <div class="bar-count" id="barCountSales">0</div>
+            </div>
+            <div class="chart-bar-row">
+              <div class="bar-label">Technical Support</div>
+              <div class="bar-track">
+                <div class="bar-fill fill-support" id="barFillSupport" style="width: 30%;"></div>
+              </div>
+              <div class="bar-count" id="barCountSupport">0</div>
+            </div>
+            <div class="chart-bar-row">
+              <div class="bar-label">Deflected Spam</div>
+              <div class="bar-track">
+                <div class="bar-fill fill-spam" id="barFillSpam" style="width: 35%;"></div>
+              </div>
+              <div class="bar-count" id="barCountSpam">0</div>
+            </div>
+            <div class="chart-bar-row">
+              <div class="bar-label">General &amp; Other</div>
+              <div class="bar-track">
+                <div class="bar-fill fill-other" id="barFillOther" style="width: 10%;"></div>
+              </div>
+              <div class="bar-count" id="barCountOther">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Urgency Breakdown Card -->
+        <div class="analytics-card">
+          <div class="card-title-row">
+            <h3 class="card-title">Urgency Stratification</h3>
+            <span class="card-tag">SLA Priorities</span>
+          </div>
+          <div class="urgency-metrics-grid">
+            <div class="urg-metric-box box-high">
+              <div class="urg-metric-val" id="analyticsUrgHigh">0</div>
+              <div class="urg-metric-title">High (P1 Outage / VIP)</div>
+              <div class="urg-metric-sub">Immediate Telegram Escalation</div>
+            </div>
+            <div class="urg-metric-box box-medium">
+              <div class="urg-metric-val" id="analyticsUrgMed">0</div>
+              <div class="urg-metric-title">Medium (Standard SLA)</div>
+              <div class="urg-metric-sub">Processed within 2 Hours</div>
+            </div>
+            <div class="urg-metric-box box-low">
+              <div class="urg-metric-val" id="analyticsUrgLow">0</div>
+              <div class="urg-metric-title">Low (Informational / Spam)</div>
+              <div class="urg-metric-sub">Automated Deflection</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost & Efficiency Telemetry Card -->
+        <div class="analytics-card span-2">
+          <div class="card-title-row">
+            <h3 class="card-title">System Efficiency &amp; Cost Shield Telemetry</h3>
+            <span class="card-tag">Enterprise Economics</span>
+          </div>
+          <div class="efficiency-grid">
+            <div class="eff-item">
+              <div class="eff-icon">⚡</div>
+              <div class="eff-val" id="effAvgLatency">1.4s</div>
+              <div class="eff-title">Average Triage Turnaround</div>
+              <div class="eff-desc">From webhook trigger to Telegram notification</div>
+            </div>
+            <div class="eff-item">
+              <div class="eff-icon">🛡️</div>
+              <div class="eff-val" id="effSpamShieldPct">100%</div>
+              <div class="eff-title">Spam Zero-LLM Shielding</div>
+              <div class="eff-desc">Spam filtered at edge without consuming Gemini API tokens</div>
+            </div>
+            <div class="eff-item">
+              <div class="eff-icon">🔒</div>
+              <div class="eff-val" id="effIdempotencyRate">Active</div>
+              <div class="eff-title">PostgreSQL Idempotency Lock</div>
+              <div class="eff-desc">SHA-256 unique index protects against duplicate submission</div>
+            </div>
+            <div class="eff-item">
+              <div class="eff-icon">🤖</div>
+              <div class="eff-val">Gemini 3.5 Flash</div>
+              <div class="eff-title">Self-Hosted Model Engine</div>
+              <div class="eff-desc">Strict JSON mode with fallback parser recovery</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 4: BURST / TRAFFIC GENERATOR -->
+    <!-- ======================================================== -->
+    <section class="view-panel" id="viewChaos">
+      <div class="panel-header">
+        <div class="panel-badge">BURST STRESS SIMULATOR</div>
+        <h2 class="panel-title">Automated Traffic Spike Generator</h2>
+        <p class="panel-subtitle">Simulate real-world traffic conditions by firing concurrent multi-category inquiries into the pipeline to test queuing, idempotency, and Telegram alerting.</p>
+      </div>
+
+      <div class="chaos-container">
+        <div class="chaos-hero-card">
+          <div class="chaos-header">
+            <div class="chaos-title-group">
+              <h3>Simulate 5 Concurrent Real-World Inquiries</h3>
+              <p>Fires 1 VIP CTO Deal, 1 P0 Critical Database Outage, 1 Strategic Cloud Partnership, 1 Bot Casino Spam, and 1 Billing Support Query simultaneously.</p>
+            </div>
+            <button class="chaos-fire-btn" id="fireChaosBtn">
+              <span id="chaosBtnIcon">🚀</span> Launch Traffic Burst
+            </button>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="chaos-progress-wrapper hidden" id="chaosProgressWrapper">
+            <div class="chaos-progress-bar">
+              <div class="chaos-progress-fill" id="chaosProgressFill" style="width: 0%;"></div>
+            </div>
+            <div class="chaos-status-text" id="chaosStatusText">Firing batch requests...</div>
+          </div>
+
+          <!-- Real-time Burst Results Feed -->
+          <div class="burst-feed" id="burstFeed">
+            <div class="burst-placeholder" id="burstPlaceholder">Click "Launch Traffic Burst" to watch the concurrent pipeline execution stream in real-time.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: DEEP INTELLIGENCE INSPECTOR -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay hidden" id="leadModalOverlay" aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-pretitle">INQUIRY INTELLIGENCE DOSSIER</div>
+          <h3 class="modal-title" id="modalSenderName">Elena Rostova</h3>
+          <div class="modal-email" id="modalSenderEmail">elena@acme.com</div>
+        </div>
+        <button class="modal-close-btn" id="closeModalBtn" title="Close Dossier">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Classification Badges -->
+        <div class="modal-badge-row">
+          <div class="modal-badge-item">
+            <span class="badge-label">Category:</span>
+            <span class="badge-val" id="modalCategoryBadge">sales</span>
+          </div>
+          <div class="modal-badge-item">
+            <span class="badge-label">Urgency:</span>
+            <span class="badge-val" id="modalUrgencyBadge">high</span>
+          </div>
+          <div class="modal-badge-item">
+            <span class="badge-label">Review Flag:</span>
+            <span class="badge-val" id="modalReviewBadge">No</span>
+          </div>
+          <div class="modal-badge-item">
+            <span class="badge-label">Received:</span>
+            <span class="badge-val" id="modalDateBadge">Just now</span>
+          </div>
+        </div>
+
+        <!-- Original Message -->
+        <div class="modal-section">
+          <div class="modal-section-title">ORIGINAL INQUIRY MESSAGE:</div>
+          <div class="modal-message-box" id="modalOriginalMessage">Message goes here...</div>
+        </div>
+
+        <!-- AI Executive Summary -->
+        <div class="modal-section">
+          <div class="modal-section-title">AI EXECUTIVE SUMMARY:</div>
+          <div class="modal-summary-box" id="modalSummary">AI Summary...</div>
+        </div>
+
+        <!-- Suggested Reply -->
+        <div class="modal-section">
+          <div class="modal-section-header">
+            <span class="modal-section-title">AI SUGGESTED REPLY DRAFT:</span>
+            <button class="copy-action-btn" id="modalCopyReplyBtn">📋 Copy Draft</button>
+          </div>
+          <textarea class="modal-reply-editor" id="modalReplyEditor" rows="4"></textarea>
+        </div>
+
+        <!-- Triage Status Switcher -->
+        <div class="modal-status-row">
+          <span class="modal-status-label">Operational Status:</span>
+          <div class="status-options" id="modalStatusOptions">
+            <button class="status-opt-btn" data-status="new">New</button>
+            <button class="status-opt-btn" data-status="in_progress">In Progress</button>
+            <button class="status-opt-btn" data-status="resolved">Resolved</button>
+            <button class="status-opt-btn" data-status="escalated">Escalated</button>
+          </div>
+        </div>
+
+        <!-- Idempotency & Raw Telemetry -->
+        <div class="modal-section">
+          <details class="modal-details">
+            <summary class="details-summary">View Database Cryptographic &amp; Raw Telemetry</summary>
+            <div class="raw-box">
+              <div class="raw-row"><strong>Lead UUID:</strong> <span id="modalLeadId">--</span></div>
+              <div class="raw-row"><strong>SHA-256 Hash:</strong> <span id="modalHash">--</span></div>
+              <div class="raw-row"><strong>Telegram Dispatch:</strong> <span id="modalTgStatus">Broadcasted via @dishub_lead_alert_bot</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="modalCancelBtn">Close</button>
+        <button class="btn-primary" id="modalSaveReplyBtn">Save &amp; Mark In Progress</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
